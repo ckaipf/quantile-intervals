@@ -2,7 +2,9 @@
 
 `Bedtools` and `tidyverse` workflow to calculate the distribution of a normalized variable for each position within genomic intervals.
 
-![](example_plot.png)
+<p align="center">
+<img src="example_plot.png" width="300" height="300">
+</p>
 
 ## Notes
 * Run the script:
