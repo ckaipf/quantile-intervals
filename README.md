@@ -1,6 +1,6 @@
-# DBYP
+# quantile-intervals
 
-`Bedtools` and `tidyverse` workflow to calculate the distribution of a normalized variable for each position within genomic intervals.
+`bedtools` and `tidyverse` workflow to calculate the distribution of a normalized variable for each position within genomic intervals.
 
 <p align="center">
 <img src="example_plot.png" width="300" height="300">
@@ -25,4 +25,4 @@ nextflow main.nf
 * `bedtools >= 2.27.1`
 * `R >= 4.1.2`
 * `tidyverse >= 1.3.1`
-
+* `reshape2 >= 1.4.4`
