@@ -89,19 +89,19 @@ process maultaschify {
         return flat_n_chop_n_fill([(p,q,y)] + tail, acc+([x]*(j-i))+([0]*(p-j)))
       else:
         return acc
-    def strList(li):
+    def str_list(li):
       return [str(el) for el in li]
 
     # Assumes input is sorted
     # Collect intersected intervals of target and variable, then flat chop and fill
     with open('${csv}', mode='r') as in_, open('intervals.tsv', mode="w") as out:
-      l, pre, wr, rows = [], [-1]*12, csv.writer(out, delimiter="\t"), csv.reader(in_)
+      acc, pre, wr, rows = [], [-1]*12, csv.writer(out, delimiter="\t"), csv.reader(in_)
       for row in rows:
         target, variable = row[:9], (int(row[9]),int(row[10]),float(row[11]))
         if target != pre:
-          wr.writerow(pre+[",".join(strList(flat_n_chop_n_fill([(int(pre[3]),int(pre[3]),0)]+l+[(int(pre[4]),int(pre[4]),0)])))]) 
-          pre, l = target, []
-        l += [variable]
+          wr.writerow(pre+[",".join(str_list(flat_n_chop_n_fill([(int(pre[3]),int(pre[3]),0)]+acc+[(int(pre[4]),int(pre[4]),0)])))]) 
+          pre, acc = target, []
+        acc += [variable]
     """
   }
 
