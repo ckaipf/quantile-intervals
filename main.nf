@@ -5,8 +5,8 @@ params.tag = "example_plot"
 
 // Files
 params.genome = "example/genome_file"
-params.variable_bedgraph = ["example/example_rep_2.bed"]
-// params.variable_bedgraph = ["example/example_rep_1.bed", "example/example_rep_2.bed"] // If multiple bedgraphs are provided, they can be merged by a function, e.g. addition
+params.variable_bedgraph = ["example/example_rep_2.bg"]
+//params.variable_bedgraph = ["example/example_rep_1.bg", "example/example_rep_2.bg"] // If multiple bedgraphs are provided, they can be merged by a function, e.g. addition
 params.target = "example/example.gff"
 
 // Bedtools slop parameters
@@ -34,19 +34,90 @@ workflow quantilize {
   main:
   variable_bedgraph_ch = Channel.fromPath(variable_bedgraph) | \
   sortBed | \
-  toList | \
-  mergeReplicates
+  toList //| \
+  //mergeReplicates
 
   genome_file = Channel.fromPath(genome) 
   target_ch = Channel.fromPath(target) | \
       sortGff
   slopped = slop(target_ch, genome_file) 
-  getFlank(slopped, variable_bedgraph_ch) | \
-   plotQuantiles
+  intersect(slopped, variable_bedgraph_ch) |
+  maultaschify 
+
+  maultaschify.out.intervals | removeLastLine | plotQuantiles
+  maultaschify.out.warnings.toList().forEach { if(it) print it.trim() }
 }
 
+process intersect {
+  //  publishDir ".", mode: "copy"
+    input:
+    path slop
+    path bedGraph
+    output:
+    path "*.flanked"
+   
+    """
+    bedtools intersect -a "${slop}" -b ${bedGraph} -wb -s -wa | \
+    awk -v OFS="," '{print \$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$11,\$12,\$14}' > "${slop}.flanked"
+    
+    # Add dummy line at the end for subsequent process
+    echo "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1" >> "${slop}.flanked"
+    """
+}
+
+process maultaschify {
+    input:
+    path csv
+    output:
+    path "intervals.tsv", emit: intervals
+      stdout emit: warnings
+    
+    """
+    #!/usr/bin/env python3
+    import os, csv
+    # Takes a list of intervals with assoc. values and returns a 
+    # flattend and 1-binned list of values 
+
+    def flat_n_chop_n_fill(li, acc=[]):
+      if len(li) > 1:
+        (i,j,x), (p,q,y),*tail = li
+        # Problem when variable interval exceeds target interval 
+        if p < i:
+           p = i
+        if j > q:
+          j = q
+        return flat_n_chop_n_fill([(p,q,y)] + tail, acc+([x]*(j-i))+([0]*(p-j)))
+      else:
+        return acc
+    def strList(li):
+      return [str(el) for el in li]
+
+    # Assumes input is sorted
+    # Collect intersected intervals of target and variable, then flat chop and fill
+    with open('${csv}', mode='r') as in_, open('intervals.tsv', mode="w") as out:
+      l, pre, wr, rows = [], [-1]*12, csv.writer(out, delimiter="\t"), csv.reader(in_)
+      for row in rows:
+        target, variable = row[:9], (int(row[9]),int(row[10]),float(row[11]))
+        if target != pre:
+          wr.writerow(pre+[",".join(strList(flat_n_chop_n_fill([(int(pre[3]),int(pre[3]),0)]+l+[(int(pre[4]),int(pre[4]),0)])))]) 
+          pre, l = target, []
+        l += [variable]
+    """
+  }
+
+  process removeLastLine {
+    input:
+    path file
+    output:
+    path "${file}.tail"
+    """
+    tail -n +2 ${file} > ${file}.tail 
+    """
+  }
+
+
 process mergeReplicates {
-//  publishDir ".", mode: "copy"
+ // publishDir ".", mode: "copy"
   input:
   val files
   output:
@@ -60,7 +131,6 @@ process mergeReplicates {
     input_list = tail.toString().minus("[").replace(",", "").minus("]") 
   }
    
-  
   if (files.size() > 1) 
     """
     cat ${head} > acc
@@ -116,19 +186,6 @@ process slop {
   """
   bedtools slop -l ${params.slop_left} -r ${params.slop_right} -g ${genome} -i ${target} > ${target}.slop
   """
-}
-
-process getFlank {
-    //publishDir ".", mode: "copy"
-    input:
-    path slop
-    path bedGraph
-    output:
-    path "*.flanked"
-   
-    """
-    bedtools map -a "${slop}" -b ${bedGraph} -c 5 -s -o collapse > "${slop}.flanked"
-    """
 }
 
 process plotQuantiles {
