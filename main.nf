@@ -5,7 +5,7 @@ params.tag = "example_plot"
 
 // Files
 params.genome = "example/genome_file"
-params.variable_bedgraph = ["example/example_rep_2.bg"]
+params.variable_bedgraph = ["example/example_rep.bg"]
 //params.variable_bedgraph = ["example/example_rep_1.bg", "example/example_rep_2.bg"] // If multiple bedgraphs are provided, they can be merged by a function, e.g. addition
 params.target = "example/example.gff"
 
