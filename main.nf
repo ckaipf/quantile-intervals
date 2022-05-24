@@ -334,9 +334,10 @@ str_split(x\$attribute, ";") %>%
     span = .01,
     alpha = .5
     ) + 
-    scale_fill_viridis_d(option = "B", labels = ~ paste0(., "%")) +
+    scale_fill_viridis_d(option = "D", labels = ~ paste0(., "%")) +
     geom_vline(xintercept = 0) +
     ylab(bquote(paste(italic(v)[normalized]))) +
+    xlab("position [bp]") + 
     facet_grid(formula("${params.facet_formula}"), switch = "y") + 
     geom_text(parse = T, mapping = aes(
       x = -Inf, 
@@ -345,7 +346,7 @@ str_split(x\$attribute, ";") %>%
       hjust = -0.1, 
       vjust = 1.5
     ), check_overlap = T, show.legend = F) +
-    guides(fill = guide_legend(nrow = 1)) +
+    guides(fill = guide_legend(nrow = 2)) +
     theme(
       strip.background.x = element_rect(color = "white"),
       strip.background = element_blank(),
