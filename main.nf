@@ -44,7 +44,7 @@ workflow quantilize {
   intersect(slopped, variable_bedgraph_ch) |
   maultaschify 
 
-  maultaschify.out.intervals | removeLastLine | plotQuantiles
+  maultaschify.out.intervals | removeFirstLine | plotQuantiles
   maultaschify.out.warnings.toList().forEach { if(it) print it.trim() }
 }
 
@@ -105,7 +105,7 @@ process maultaschify {
     """
   }
 
-  process removeLastLine {
+  process removeFirstLine {
     input:
     path file
     output:
@@ -212,7 +212,6 @@ process plotQuantiles {
   }) 
   quantiles_functions <- quantiles_functions %>% 
     set_names((quantiles * 100))
-
   #---
   x <- read_delim("${csv}", delim = "\t",
              col_types = "cccddccccc", 
@@ -245,7 +244,6 @@ str_split(x\$attribute, ";") %>%
     group_by(across(all_of(groups))) %>% 
     mutate(n = n_distinct(across(everything()))) %>%
     ungroup() %>% 
-
   #---
   # Get positions variables
     separate(target_variable, 
@@ -259,7 +257,6 @@ str_split(x\$attribute, ";") %>%
   # Flip negative strand
        group_by(across(all_of(id))) %>%
        mutate(position = if_else(strand == "+", position, l-position)) %>% 
-
   # ---
   # Align windows by their centers (ambiguity +-1bp, floor, ceiling)  
        filter(!is.na(value)) %>%
@@ -273,8 +270,6 @@ str_split(x\$attribute, ";") %>%
        mutate(position = paste0("target_variable_", position)) %>%
        reshape2::dcast(... ~ position, value.var = "value")  %>%
        as_tibble() %>% 
-  #---
-
   #---
   # Calculate parameters for normalization within window
     group_by(., across(all_of(id))) %>%
@@ -306,12 +301,9 @@ str_split(x\$attribute, ";") %>%
      } %>% 
     pivot_longer(starts_with("target_variable_"), names_to = "position") %>% 
     mutate(position = as.numeric(str_remove(position, "target_variable_"))) %>% 
-
-
   # ---
   # Apply normalization within window
     group_by(across(all_of(id))) %>% 
-    
        mutate(
       x_norm = 
         case_when(normalization_mode == "function" ~ value / (chuck(parameters, 1, "p_1")),
@@ -319,25 +311,21 @@ str_split(x\$attribute, ";") %>%
                   normalization_mode == "z_score" ~ ((as.numeric(value) - chuck(parameters, 1, "p_1")) / (chuck(parameters, 1, "p_2"))) 
             )
     ) %>% 
-       
   # ---
   # Reduce and tidy data
     filter(!is.infinite(x_norm), !is.na(x_norm)) %>% 
     select(all_of(c(groups, id, "position", "n", "x_norm"))) %>% 
     distinct(across(everything())) %>% 
-    
   # ---
   # Summarize variable for each positions by quantiles
     group_by(position, n, across(all_of(groups))) %>% 
     summarise(across(.cols = x_norm, .fns = quantiles_functions, .names = "m_{.fn}")) %>% 
     pivot_longer(starts_with("m_")) %>% 
     mutate(quantile = as.factor(as.numeric(str_remove(name, "m_")))) %>%
-
   # ---
   # Cosmetics
     mutate(n = paste0("italic(n)==", n)) %>% 
     mutate(quantile = fct_reorder(quantile, as.numeric(quantile), .desc = T) ) %>%
-
   # ---
   # Plot
     ggplot(aes(x = position, y = value, fill = quantile)) +
@@ -348,12 +336,9 @@ str_split(x\$attribute, ";") %>%
     span = .01,
     alpha = .5
     ) + 
-
     scale_fill_viridis_d(option = "B", labels = ~ paste0(., "%")) +
     geom_vline(xintercept = 0) +
-       
     ylab(bquote(paste(italic(v)[normalized]))) +
-    
     facet_grid(formula("${params.facet_formula}"), switch = "y") + 
     geom_text(parse = T, mapping = aes(
       x = -Inf, 
@@ -373,7 +358,6 @@ str_split(x\$attribute, ";") %>%
       strip.placement = "outside",
       legend.position = "bottom"
   ) -> p
-
   ggsave("${params.tag}.png", plot = p, device = "png")
   """
 }
