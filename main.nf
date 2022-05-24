@@ -266,10 +266,8 @@ str_split(x\$attribute, ";") %>%
        mutate(position = position + floor((max_l-l)/2))  %>% 
        mutate(position = position - (max_l/2)) %>%
   #---
-  # Pivot_wider does not support margins, reshape2::dcast also adds cols if values don't exists for variable   
        mutate(position = paste0("target_variable_", position)) %>%
-       reshape2::dcast(... ~ position, value.var = "value")  %>%
-       as_tibble() %>% 
+       pivot_wider(names_from = "position", values_from = "value", values_fill = NA) %>% 
   #---
   # Calculate parameters for normalization within window
     group_by(., across(all_of(id))) %>%

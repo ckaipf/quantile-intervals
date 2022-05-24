@@ -24,4 +24,3 @@ nextflow main.nf
 * `bedtools >= 2.27.1`
 * `R >= 4.1.2`
 * `tidyverse >= 1.3.1`
-* `reshape2 >= 1.4.4`
