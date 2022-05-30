@@ -1,14 +1,13 @@
 # quantile-intervals
 
-`bedtools` and `tidyverse` workflow to calculate the distribution of a normalized variable (`bedgraph`) for each position within genomic intervals (`GFF`).
+Workflow to visualize the distribution of a continuous variable (`bedgraph`) for each position within genomic intervals (`GFF`).
 
 <p align="center">
-<img src="example_plot.png" width="300" height="300">
+<img src="example_plot.png" width="400" height="400">
 </p>
 
 ## Notes
 * Run the script:
-
 ```
 nextflow main.nf
 ```
@@ -22,5 +21,6 @@ nextflow main.nf
 ## Requirements
 * `nextflow >= 21.04.3.5560`
 * `bedtools >= 2.27.1`
+* `python >= 3.7.3`
 * `R >= 4.1.2`
 * `tidyverse >= 1.3.1`
