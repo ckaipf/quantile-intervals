@@ -5,7 +5,7 @@ params.tag = "example_plot"
 
 // Files
 params.genome = "example/genome_file"
-params.variable_bedgraph = ["example/example_rep.bg"]
+params.variable_bedgraph = "example/example_rep.bg.gz"
 params.target = "example/example.gff"
 
 // Bedtools slop parameters
@@ -32,21 +32,55 @@ workflow quantilize {
         target
   main:
   variable_bedgraph_ch = Channel.fromPath(variable_bedgraph) | \
-  sortBed 
+  prepareBedgraph
 
   genome_file = Channel.fromPath(genome) 
   target_ch = Channel.fromPath(target) | \
       sortGff
   slopped = slop(target_ch, genome_file) 
   intersect(slopped, variable_bedgraph_ch) |
+  gzipIntersection |
   maultaschify 
 
-  maultaschify.out.intervals | removeFirstLine | plotQuantiles
+  maultaschify.out.intervals | plotQuantiles
   maultaschify.out.warnings.toList().forEach { if(it) print it.trim() }
 }
 
-process intersect {
+process prepareBedgraph {
+    input:
+    path f
+    output:
+    path "*.gz"
+   
+    script:
+    if (f.getExtension().equals("gz") )
+      """
+      gunzip -c ${f} | sort -k1,1 -k2,2n -k3,3n | gzip -c > ${f}.gz
+      """
+    else if (f.getExtension().equals("bg"))
+      """
+      cat ${f} | sort -k1,1 -k2,2n -k3,3n | gzip -c > "${f}.gz"
+      """
+    else
+      error "unknown file extension: ${f}"
+}
+
+process gzipIntersection {
   //  publishDir ".", mode: "copy"
+    input:
+    path f
+    output:
+    path "*.gz"
+   
+    script:
+    """
+    cat ${f} | gzip -c > "${f}.gz"
+    """
+}
+
+
+process intersect {
+    //publishDir ".", mode: "copy"
     input:
     path slop
     path bedGraph
@@ -63,15 +97,17 @@ process intersect {
 }
 
 process maultaschify {
+ //   publishDir ".", mode: "copy"
+
     input:
     path csv
     output:
-    path "intervals.tsv", emit: intervals
+    path "intervals.tsv.gz", emit: intervals
       stdout emit: warnings
     
     """
     #!/usr/bin/env python3
-    import os, csv
+    import os, csv, gzip
     # Takes a list of intervals with assoc. values and returns a 
     # flattend and 1-binned list of values 
 
@@ -91,7 +127,7 @@ process maultaschify {
 
     # Assumes input is sorted
     # Collect intersected intervals of target and variable, then flat chop and fill
-    with open('${csv}', mode='r') as in_, open('intervals.tsv', mode="w") as out:
+    with gzip.open('${csv}', mode='rt') as in_, gzip.open('intervals.tsv.gz', mode="wt") as out:
       acc, pre, wr, rows = [], [-1]*12, csv.writer(out, delimiter="\t"), csv.reader(in_)
       for row in rows:
         target, variable = row[:9], (int(row[9]),int(row[10]),float(row[11]))
@@ -101,30 +137,6 @@ process maultaschify {
         acc += [variable]
     """
   }
-
-  process removeFirstLine {
-    input:
-    path file
-    output:
-    path "${file}.tail"
-    """
-    tail -n +2 ${file} > ${file}.tail 
-    """
-  }
-
-
-process sortBed {
-  input:
-  path(a)
-  output:
-  path("${a}.sorted")
-
-  """
-  sort -k1,1 -k2,2n -k3,3n ${a} > ${a}.sorted
-  """
-}
-
-
 
 process sortGff {
   input:
@@ -179,6 +191,7 @@ process plotQuantiles {
     set_names((quantiles * 100))
   #---
   x <- read_delim("${csv}", delim = "\t",
+             skip = 1,
              col_types = "cccddccccc", 
              col_names = c("seqname",
                            "source", 
