@@ -6,7 +6,6 @@ params.tag = "example_plot"
 // Files
 params.genome = "example/genome_file"
 params.variable_bedgraph = ["example/example_rep.bg"]
-//params.variable_bedgraph = ["example/example_rep_1.bg", "example/example_rep_2.bg"] // If multiple bedgraphs are provided, they can be merged by a function, e.g. addition
 params.target = "example/example.gff"
 
 // Bedtools slop parameters
@@ -33,9 +32,7 @@ workflow quantilize {
         target
   main:
   variable_bedgraph_ch = Channel.fromPath(variable_bedgraph) | \
-  sortBed | \
-  toList //| \
-  //mergeReplicates
+  sortBed 
 
   genome_file = Channel.fromPath(genome) 
   target_ch = Channel.fromPath(target) | \
@@ -114,38 +111,6 @@ process maultaschify {
     tail -n +2 ${file} > ${file}.tail 
     """
   }
-
-
-process mergeReplicates {
- // publishDir ".", mode: "copy"
-  input:
-  val files
-  output:
-  path("acc")
-
-  
-  script:
-  if (files.size() > 1) {
-    head = files[0]
-    tail = files[1..-1]
-    input_list = tail.toString().minus("[").replace(",", "").minus("]") 
-  }
-   
-  if (files.size() > 1) 
-    """
-    cat ${head} > acc
-    
-    for i in ${input_list}; do
-      paste acc <(cut -f 5 \${i}) | awk 'BEGIN{OFS="\t"} {print \$1,\$2,\$3,\$4,\$5+\$7,\$6}' > tmp 
-      mv tmp acc
-    done
-    """
-  
-  else 
-    """
-    cat ${files[0]} > acc
-    """
-}
 
 
 process sortBed {
