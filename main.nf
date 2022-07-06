@@ -47,6 +47,7 @@ workflow quantilize {
 }
 
 process prepareBedgraph {
+    container "${ 'debian:stable-slim' }"
     input:
     path f
     output:
@@ -66,7 +67,7 @@ process prepareBedgraph {
 }
 
 process gzipIntersection {
-  //  publishDir ".", mode: "copy"
+    container "${ 'debian:stable-slim' }"
     input:
     path f
     output:
@@ -81,6 +82,7 @@ process gzipIntersection {
 
 process intersect {
     //publishDir ".", mode: "copy"
+    container "${ 'https://depot.galaxyproject.org/singularity/bedtools:2.30.0--hc088bd4_0' }"    
     input:
     path slop
     path bedGraph
@@ -97,8 +99,7 @@ process intersect {
 }
 
 process maultaschify {
- //   publishDir ".", mode: "copy"
-
+    container "${ 'python:slim' }"
     input:
     path csv
     output:
@@ -139,6 +140,7 @@ process maultaschify {
   }
 
 process sortGff {
+  container "${ 'debian:stable-slim' }"
   input:
   path a
   output:
@@ -151,8 +153,7 @@ process sortGff {
 
 
 process slop {
-//  publishDir ".", mode: "copy"
-
+  container "${ 'https://depot.galaxyproject.org/singularity/bedtools:2.30.0--hc088bd4_0' }"    
   input:
   path target
   path genome
@@ -167,6 +168,7 @@ process slop {
 
 process plotQuantiles {
     publishDir ".", mode: "copy"
+    container "${ 'rocker/tidyverse' }"
     input:
     path csv
     output:
