@@ -8,4 +8,5 @@ jobs:
       image: nextflow/nextflow
     steps:
       - name: run_nextflows
-        run: (ls -lca)
+        run: |
+            ls -lca
