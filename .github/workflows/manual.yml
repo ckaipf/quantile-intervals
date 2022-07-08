@@ -1,0 +1,11 @@
+name: Run example
+on:
+  workflow_dispatch:
+jobs:
+  run_example:
+    runs-on: ubuntu-latest
+    container:
+      image: nextflow/nextflow
+    steps:
+      - name: run_nextflows
+        run: nextflow main.nf
