@@ -4,9 +4,8 @@ on:
 jobs:
   run_example:
     runs-on: ubuntu-latest
-    container:
-      image: nextflow/nextflow
+    container: nextflow/nextflow
     steps:
       - name: run_nextflows
         run: |
-            ls -lca
+            ls -lca $HOME
