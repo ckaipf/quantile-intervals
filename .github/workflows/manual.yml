@@ -8,4 +8,4 @@ jobs:
     steps:
       - name: run_nextflows
         run: |
-            ls -lca $HOME
+            ls -lca ${{ github.workspace }}
