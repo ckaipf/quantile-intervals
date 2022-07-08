@@ -5,7 +5,9 @@ jobs:
   run_example:
     runs-on: ubuntu-latest
     container: nextflow/nextflow
+   
     steps:
+      - uses: actions/checkout@v2
       - name: run_nextflows
         run: |
             ls -lca ${{ runner.workspace }}
